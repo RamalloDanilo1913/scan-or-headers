@@ -113,4 +113,4 @@ Python 3.10+ · `requests`
 
 **Danilo Ramallo** — Estudiante de Ingeniería Electrónica · Desarrollo web y ciberseguridad
 
-[GitHub](https://github.com/RamalloDanilo1913) · [LinkedIn](https://www.linkedin.com/in/danilo-ramallo-9877a6289)
+[GitHub](https://github.com/RamalloDanilo1913) · [LinkedIn](https://www.linkedin.com/in/daniloramallo)
