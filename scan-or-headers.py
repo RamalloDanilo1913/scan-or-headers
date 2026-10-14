@@ -1,43 +1,4 @@
 #!/usr/bin/env python3
-"""
-analizador.py — Análisis pasivo de headers de seguridad y detección de
-candidatos a open redirect a partir de un listado de URLs.
-
-USO RESPONSABLE
-----------------
-Esta herramienta es de reconocimiento PASIVO: hace peticiones HTTP normales
-(las mismas que haría un navegador) y lee las respuestas. NO intenta
-explotar nada, NO sigue URLs embebidas para "confirmar" un redirect, y NO
-decide eso por vos.
-
-Usala solo contra sitios propios o sobre los que tengas autorización
-explícita (por ejemplo, el alcance de un programa de bug bounty). El hecho
-de que un sitio aparezca en una lista generada por otra herramienta no es
-autorización para analizarlo.
-
-ENTRADA
--------
-Un archivo de texto con URLs, una por línea. Podés pasarle la salida cruda
-de otras herramientas (httpx, gau, ffuf, waybackurls, etc.): el script
-ignora todo lo que no sea una URL http(s) válida, así que "[200]", colores
-ANSI, tamaños de respuesta, etc. no rompen el parseo.
-
-SALIDA
-------
-Un CSV con una fila por URL analizada:
-  url, status, headers_faltantes, https_ok, redirige_a_https, hsts,
-  parametro_sospechoso, url_embebida
-
-Y, aparte, un archivo con la lista corta de "candidatos a revisar a mano"
-(los que tienen un parámetro con una URL embebida en un nombre típico de
-redirect: url, next, redirect, return, continue, etc.).
-
-EJEMPLOS
---------
-    python3 analizador.py -i urls.txt -o resultado.csv
-    cat httpx_output.txt | python3 analizador.py -o resultado.csv
-    python3 analizador.py -i urls.txt -o resultado.csv --concurrencia 5 --timeout 8
-"""
 
 from __future__ import annotations
 
@@ -54,12 +15,8 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-# ---------------------------------------------------------------------------
-# Configuración
-# ---------------------------------------------------------------------------
 
-# Headers de seguridad que buscamos. El valor es solo informativo (qué
-# protege), no se valida su contenido en detalle, solo su presencia.
+# Headers de seguridad que busca:
 HEADERS_ESPERADOS = {
     "Strict-Transport-Security": "fuerza HTTPS en visitas futuras",
     "X-Content-Type-Options": "evita que el navegador adivine el tipo de archivo",
@@ -68,7 +25,7 @@ HEADERS_ESPERADOS = {
     "Referrer-Policy": "controla qué URL se filtra al navegar a otro sitio",
 }
 
-# Nombres de parámetro típicos en vulnerabilidades de open redirect.
+# Nombres de parámetro típicos de open redirect:
 PARAMETROS_SOSPECHOSOS = {
     "url", "u", "redirect", "redirect_uri", "redirecturl", "next", "return",
     "returnurl", "return_to", "continue", "dest", "destination", "target",
@@ -76,11 +33,10 @@ PARAMETROS_SOSPECHOSOS = {
     "forward_url", "r", "view",
 }
 
-USER_AGENT = "analizador-sitios/1.0 (uso autorizado; +https://github.com/)"
+USER_AGENT_DEFAULT = "scan-or-headers, herramienta de escaneo pasivo"
 
 URL_REGEX = re.compile(r"https?://[^\s\"'<>\]\)\[]+", re.IGNORECASE)
-# Detecta un valor de parámetro que es, a su vez, una URL (embebida o
-# codificada con %-escapes / doble codificación básica).
+# Detecta un valor de parámetro que es, a su vez, una URL (embebida o codificada con %-escapes / doble codificación básica).
 VALOR_URL_REGEX = re.compile(
     r"^(https?%3a%2f%2f|https?://|%68%74%74%70)", re.IGNORECASE
 )
@@ -99,13 +55,10 @@ class Resultado:
     error: str = ""
 
 
-# ---------------------------------------------------------------------------
-# Parseo de entrada
-# ---------------------------------------------------------------------------
+# Parseo de entrada:
 
 def extraer_urls(lineas: list[str]) -> list[str]:
-    """Extrae URLs http(s) válidas de texto arbitrario (salida de otras
-    herramientas, con corchetes, colores, status codes, etc. alrededor)."""
+    # Extrae URLs http(s) válidas de texto arbitrario
     vistas: set[str] = set()
     urls: list[str] = []
     for linea in lineas:
@@ -117,14 +70,11 @@ def extraer_urls(lineas: list[str]) -> list[str]:
     return urls
 
 
-# ---------------------------------------------------------------------------
-# Detección de URL embebida en parámetros (pasivo: solo mirar, no seguir)
-# ---------------------------------------------------------------------------
+# Detección de URL embebida en parámetros:
 
 def detectar_parametro_sospechoso(url: str) -> tuple[str, str]:
     """Devuelve (nombre_de_parametro, valor) si la URL tiene un parámetro de
-    nombre típico de redirect cuyo valor parece ser otra URL. No sigue ni
-    valida ese valor: es un candidato para revisión manual."""
+    nombre típico de redirect cuyo valor parece ser otra URL"""
     partes = urllib.parse.urlsplit(url)
     query = urllib.parse.parse_qsl(partes.query, keep_blank_values=True)
     for nombre, valor in query:
@@ -135,31 +85,28 @@ def detectar_parametro_sospechoso(url: str) -> tuple[str, str]:
     return "", ""
 
 
-# ---------------------------------------------------------------------------
-# Peticiones HTTP
-# ---------------------------------------------------------------------------
+# Peticiones HTTP:
 
-def armar_sesion(timeout: float) -> requests.Session:
+def armar_sesion(timeout: float, user_agent: str) -> requests.Session:
     sesion = requests.Session()
     reintentos = Retry(total=2, backoff_factor=0.5, status_forcelist=[502, 503, 504])
     adaptador = HTTPAdapter(max_retries=reintentos)
     sesion.mount("http://", adaptador)
     sesion.mount("https://", adaptador)
-    sesion.headers.update({"User-Agent": USER_AGENT})
+    sesion.headers.update({"User-Agent": user_agent})
     return sesion
 
 
 def analizar_url(sesion: requests.Session, url: str, timeout: float) -> Resultado:
     resultado = Resultado(url=url)
 
-    # Parámetro sospechoso (pasivo, no depende de la red)
+    # Parámetro sospechoso (no depende de la red)
     nombre, valor = detectar_parametro_sospechoso(url)
     if nombre:
         resultado.parametro_sospechoso = nombre
         resultado.url_embebida = valor
 
-    # Petición principal: seguimos redirects para ver el estado final y
-    # los headers de la respuesta real.
+    # Petición principal: seguimos redirects para ver el estado final y los headers de la respuesta real.
     try:
         resp = sesion.get(url, timeout=timeout, allow_redirects=True)
         resultado.status = str(resp.status_code)
@@ -192,10 +139,6 @@ def analizar_url(sesion: requests.Session, url: str, timeout: float) -> Resultad
     return resultado
 
 
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
-
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Analiza headers de seguridad, HTTP vs HTTPS y candidatos "
@@ -203,6 +146,8 @@ def main() -> int:
     )
     parser.add_argument("-i", "--input", help="Archivo con URLs (o salida de otra herramienta). "
                          "Si se omite, lee de stdin.")
+    parser.add_argument("-u", "--url", help="Analiza una sola URL suelta, sin necesidad de archivo. "
+                     "Si se pasa, se ignoran -i y stdin.")
     parser.add_argument("-o", "--output", required=True, help="CSV de salida con todos los resultados.")
     parser.add_argument("--candidatos", help="Archivo de texto con la lista corta de candidatos a "
                          "open redirect para revisión manual (por defecto: <output>.candidatos.txt).")
@@ -210,11 +155,16 @@ def main() -> int:
     parser.add_argument("--timeout", type=float, default=10.0, help="Timeout por petición en segundos (default: 10).")
     parser.add_argument("--pausa", type=float, default=0.0, help="Pausa en segundos entre el lanzamiento de cada "
                          "petición, para no saturar el sitio objetivo (default: 0).")
+    parser.add_argument("--user-agent", default=USER_AGENT_DEFAULT, help="User-Agent a enviar en cada petición. "
+                     f"autorizados. Default: {USER_AGENT_DEFAULT!r}")
     args = parser.parse_args()
 
-    if args.input:
+    if args.url:
+        lineas = [args.url]
+    
+    elif args.input:
         with open(args.input, "r", encoding="utf-8", errors="ignore") as f:
-            lineas = f.readlines()
+          lineas = f.readlines()
     else:
         lineas = sys.stdin.readlines()
 
@@ -226,7 +176,7 @@ def main() -> int:
     print(f"[info] {len(urls)} URLs únicas detectadas. Analizando con concurrencia={args.concurrencia}...",
           file=sys.stderr)
 
-    sesion = armar_sesion(args.timeout)
+    sesion = armar_sesion(args.timeout, args.user_agent)
     resultados: list[Resultado] = []
 
     with ThreadPoolExecutor(max_workers=args.concurrencia) as pool:
