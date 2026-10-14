@@ -8,9 +8,7 @@ Herramienta de reconocimiento **pasivo** en Python: toma un listado de URLs (inc
 
 ## Por qué es pasivo y no un exploit
 
-La herramienta hace únicamente las mismas peticiones HTTP que haría un navegador al visitar cada URL. **Nunca sigue la URL embebida de un parámetro sospechoso ni intenta confirmar el redirect por su cuenta** — eso queda a propósito como un paso manual, para que la decisión de probar algo la tome una persona, sobre un sitio que sabe que puede tocar.
-
-> **Usala solo contra sitios propios o con autorización explícita** (por ejemplo, dentro del alcance de un programa de bug bounty). Que un sitio aparezca en el listado de salida de otra herramienta no es autorización para analizarlo.
+La herramienta hace únicamente las mismas peticiones HTTP que haría un navegador al visitar cada URL. **Nunca sigue la URL embebida de un parámetro sospechoso ni intenta confirmar el redirect por su cuenta** — eso queda a propósito como un paso manual.
 
 ## Instalación
 
