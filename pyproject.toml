@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scan-or-headers"
+version = "1.0.0"
+description = "Análisis pasivo de headers de seguridad, HTTP vs HTTPS y candidatos a open redirect"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Danilo Ramallo" }]
+dependencies = ["requests>=2.31.0"]
+
+[project.urls]
+Repository = "https://github.com/RamalloDanilo1913/scan-or-headers"
+
+[project.scripts]
+scan-or-headers = "scan_or_headers:main"
+
+[tool.setuptools]
+py-modules = ["scan_or_headers"]

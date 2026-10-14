@@ -12,20 +12,63 @@ La herramienta hace únicamente las mismas peticiones HTTP que haría un navegad
 
 ## Instalación
 
+Requiere Python 3.10+ y [pipx](https://pipx.pypa.io), que instala la herramienta en su propio entorno aislado y la deja disponible como comando global. Funciona en Debian 12/13, Ubuntu, Kali y otras distros que bloquean `pip install` global (error `externally-managed-environment`, PEP 668).
+
+**1. Instalar pipx** (una sola vez)
+
 ```bash
-pip install -r requirements.txt
+sudo apt install pipx
+pipx ensurepath
+```
+
+Cerrá y volvé a abrir la terminal para que el comando quede en el `PATH`.
+
+**2. Instalar la herramienta**
+
+```bash
+pipx install git+https://github.com/RamalloDanilo1913/scan-or-headers.git
+```
+
+**3. Verificar**
+
+```bash
+scan-or-headers --help
+```
+
+### Actualizar y desinstalar
+
+```bash
+pipx upgrade scan-or-headers
+pipx uninstall scan-or-headers
+```
+
+### Instalar desde una copia local
+
+```bash
+git clone https://github.com/RamalloDanilo1913/scan-or-headers.git
+cd scan-or-headers
+pipx install .
+```
+
+### Sin pipx (solo Debian/Ubuntu)
+
+La única dependencia es `requests`, que está en los repositorios oficiales:
+
+```bash
+sudo apt install python3-requests
+python3 scan_or_headers.py -u https://ejemplo.com -o resultado.csv
 ```
 
 ## Uso
 
 ```bash
-python3 analizador.py -i urls.txt -o resultado.csv
+scan-or-headers -i urls.txt -o resultado.csv
 ```
 
 También acepta la entrada por `stdin`, así que se puede encadenar directo con otra herramienta:
 
 ```bash
-cat salida_httpx.txt | python3 analizador.py -o resultado.csv
+cat salida_httpx.txt | scan-or-headers -o resultado.csv
 ```
 
 ### Opciones
@@ -70,4 +113,4 @@ Python 3.10+ · `requests`
 
 **Danilo Ramallo** — Estudiante de Ingeniería Electrónica · Desarrollo web y ciberseguridad
 
-[LinkedIn](https://www.linkedin.com/in/danilo-ramallo-9877a6289)
+[GitHub](https://github.com/RamalloDanilo1913) · [LinkedIn](https://www.linkedin.com/in/danilo-ramallo-9877a6289)
