@@ -56,14 +56,6 @@ El parser ignora todo lo que no sea una URL http(s) válida, así que esta entra
 https://ejemplo.com/ir?redirect=https://otro-sitio.com [302]
 ```
 
-## Cómo verificar un candidato a mano
-
-Una vez que tengas la lista de candidatos, para confirmar si realmente es un open redirect en un sitio que tengas autorizado:
-
-1. Abrí la URL completa en el navegador (con el parámetro apuntando a un dominio propio de prueba).
-2. Fijate si la respuesta es un 3xx con el header `Location` apuntando a ese dominio.
-3. Si el sitio valida el dominio de destino (lista blanca, mismo origen, etc.), no es vulnerable.
-
 ## Limitaciones conocidas
 
 - La detección de parámetro sospechoso se basa en nombres comunes y en que el valor "parezca" una URL; un sitio puede usar un nombre de parámetro distinto y no se detectaría.
