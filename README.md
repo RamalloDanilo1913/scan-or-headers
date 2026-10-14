@@ -38,6 +38,8 @@ cat salida_httpx.txt | python3 analizador.py -o resultado.csv
 | `--concurrencia` | Peticiones en paralelo (default: 10). |
 | `--timeout` | Timeout por petición en segundos (default: 10). |
 | `--pausa` | Pausa entre el lanzamiento de cada petición, para no saturar el sitio objetivo (default: 0). |
+| `-u / --url` | Analiza una sola URL suelta, sin necesidad de archivo. Si se pasa, se ignoran `-i` y `stdin`. |
+| `--user-agent` | User-Agent a enviar en cada petición. |
 
 ## Salidas
 
